@@ -272,3 +272,38 @@ I'll tell you what kind of VMs are stack based. The Python virtual machine. The
 Java virtual machine. The Common Language Runtime, powering C#, F# and whatver.
 Actually, most languages run on stack machines.
 
+Back to Turing equivalence. How can you be sure your machine actually is? It's
+not always evident, because your operations could be ANYTHING. Take for
+instance the not-and operator:
+
+      NAND
+
+or
+      NOT AND
+
+It takes two binary digits, if they're both 1, it outputs 0.  Or
+
+  0 0 NAND ==> NOT (0 AND 0) ==> NOT 0
+           ==> 1
+  0 1 NAND ==> 1
+  1 0 NAND ==> 1
+  1 1 NAND ==> 0
+
+If you create a box that takes TWO inputs, the two binary digits, and has ONE
+output, and if you wire up enough of these together in the correct fashion, YOU
+CAN COMPUTE ANYTHING THAT IS POSSIBLE TO COMPUTE!
+
+That's right, NAND is really all you need to make a Turing machine! (And an
+infinite amount of wire and transistors).
+
+So, it's NOT evident how something is Turing complete or not. If you're into
+cellular automata, it was proven by some dude that rule 101 is actually Turing
+complete. (By the way, Stephen Wolfram did NOT prove this, but an assistant of
+his did). Do you know how this was proven?  By implementing brainfuck in it!
+
+In other words, if you can implement brainfuck, somehow, on your VM, it's
+Turing complete (on paper, not on any actual machine).  Scheme, for example,
+can be implemented with only 8 high-level instructions: IF, SET!, LAMBDA, 
+
+But this is yet another side track.  Scheme
+

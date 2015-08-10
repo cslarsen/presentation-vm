@@ -30,7 +30,6 @@ while True:
         if memory[pointer] == 0:
             while program.read(1) != "]":
                 pass
-            program.seek(-1)
     elif instruction == "]":
         continue
     else:
