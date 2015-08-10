@@ -63,13 +63,212 @@ really understand all of the details.
 So, let's build a brainfuck interpreter. I'll do one in Python, and it looks
 like this:
 
+<... show brainfuck.py ...>
 
-A
+There are of course a number of ways we could improve this program.  But what I
+want you to notice is that it basically consist of these things:
 
-The only difference would be in memory 
-universal Turing machine
-  this m
-Now, you can implement brainf**k
-Now, this is *exactly* how a CPU operates! Although, a CPU 
+  - an infinite loop
+  - instruction fetcher (get the next instruction)
+  - an instruction dispatcher (execute the instruction)
 
-This is exactly how a CPU operates, although it operates on machine code
+Now, as we continue we'll see that we've (A) made an interpreter, (B) which is
+also a virtual machine and (C) we've implicitly defined a source code language.
+This language happens to be the same as the instructions.  But there is NOTHING
+stopping you from taking Java source code and COMPILING IT to brainfuck. Would
+that really, really work? Well, it DOES lack class loaders, the ability to load
+files from disk and so on. But we could just increase the memory size and
+encode the location of each block of class in the source file itself. This
+leads to something interesting: We'd probably have to define a file format.
+This is what ELF, or DWARF, really is. I won't go more into that.
+
+Another thing I'd like you to realize is that this is actually EXACTLY how a
+CPU operates!  It takes some code, on Intel x86 CPUs this would be machine
+code. It needs to fetch these from memory, which it does, it needs to look at
+them and then execute them. It has memory, input and output devices and so on.
+Of course, a CPU needs some small helper machines, like a memory management
+unit, a small chip that keeps track of memory. This is a small machine itself,
+but is not necessarily (and probably not) Turing equivalent. But it DOES have
+an instruction set like "get the byte at the location 100, or return the next
+100 bytes from location 200". It's actually pretty clever, because it can map
+absolute memory addresses to virtual ones. So it can, for example, distribute
+memory on several memory chips, each only holding a finite amount of data, and
+when the CPU wants the next byte, the MMU just asks the next chip in line.
+
+Your operating system ALSO has a virtual memory system, which is also very
+clever. It can make sure that each process gets its own memory space. So if
+process A asks for the byte at location 100, it might get a different byte than
+process B asking for the byte at the same location. They have their own private
+memory spaces. Then you can ask the OS to let two processes share some memory,
+and then you get race conditions and the computer reboots.
+
+But you can see that brainfuck really does the same as a CPU. But it's actually
+a program running on top of the CPU. That's why we call it virtual: It's kind
+of like a small CPU, but with a smaller and simpler instruction set.
+
+Steve Jobs said it best: "[CPU/VMs] take these simple minded instructions -- go
+fetch a number, add them together and put the result there, perceive if it's
+greater than this other number --- but if you run them at a speed of, say, 1
+million per second, the results appear to be magic."
+
+So, let's run some serious brainfuck programs. Let's render the Mandelbrot set.
+
+<... show mandelbrot, running in our newly made interpreter ...>
+
+That's pretty awesome! Now, do you think someone crazy actually hand coded this?
+
+<... show an even crazier brainfuck program ...>
+
+Or do you think these people were actually bat shit insane and made a compiler
+that spits out brainfuck code?
+
+<... show another example ...>
+
+I think someone made a compiler. So, that's our next lesson: You have made this
+really simple machine, and it's Turing equivalent and can do some cool stuff
+--- for example, control a robot arm (and this would actually be a cool usage
+application, because you could load and run small programs without having to
+restart a process or compile anything --- but it's getting impractical to
+actually code stuff by hand. So you see, it all fits togethers: Interpreters
+(or VMs) and source code, and an implicit assumption about memory (this is
+actually a spec for an ABSTRACT MACHINE. C has one, and your language has one
+too! It defines how memory will be set up when a program starts, which
+variables or memory regions are initialized to all zeros, how it handles
+concurrency, if any, etc.)
+
+So you need a compiler. You know that Intel actually does this on every CPU?
+You see, the first batch of Intel CPUs were so-called CISC, or complex
+instruction set computers. They took pretty advanced and long-winded
+instructions, like "multiply these two numbers, store the result there, store
+their difference here, set a flag if the result is zero and jump to another
+location if it's not", or something insane like that. Then someone invented
+reduced instruction set computers, RISC computers, and they found out that (A)
+the circuitry was MUCH simpler to wire up, thus you could put more of them on
+the chip and execute several instructions at once! Actually, it has a cascading
+pipeline of instructions. If you add three numbers together, the order in which
+you add them is irrelevant. So if you have 10 thousand numbers, you can split
+that up into four batches, add them at the same time and then merge the result
+together. But if you suddenly get an incompatible instruction, like "jump back
+to line 1", you may have to drop the computations you have in the pipe. So you
+flush the pipe. Anyway, this proved to be a FAR superior way of creating CPUs.
+So much that Intel started getting into trouble competing with them.
+
+So what Intel did was to build their CPUs as RISC chips. But they wanted
+backward compatibility, as this would have been a strong selling point and
+winning strategy, so what they did was to add MICROCODE.
+
+Microcode is what the CPU actually executes. It gets machine code, which
+encodes the instruction "MUL AX, BX", multiply the value in registers AX and
+BX, fetches these and then COMPILES it into a LONGER sequence of SMALLER
+instructions -- microcode! So they added pipelines too, and they beat the
+living shit out of any other competition on the market. That was, until Apple
+funded a company called ARM that made pure RISC machines, RISC instructions and
+used really really little energy. Then someone made a smartphone and put an ARM
+chip in there. And Intel made a chip that used little energy too, and so on and
+so on.
+
+Ok, so I'm wondering how much time is left. Because everything I've talked
+about is really just the beginning. And I want to show you that there are to
+broad categories of VMs: Stack machines and register machines.
+
+Your CPU is a register machine. On the CPU itself, it can store data in
+registers. These are wired so that if you to arithmetic on numbers in
+registers, it will execute insanely fast. Like, one clock cycle to add two
+numbers. The result is put into another register. If you want to store that
+number to memory, you have to go through the MMU I told you about earlier. That
+means the number has to travel to the MMU and it needs to send it to a memory
+chip. That's slow, and you've probably heard the numbers. To make memory
+operations go faster, the CPU has caches. L1 is small, but close to the core.
+It has L2, L3, which are bigger but slower memory. Slower because they have
+cache lines, meaning that whenever you request a byte, it will load a range of
+bytes into the cache, removing what's there already. ANyway, these are details.
+Then it has memory, then it has disk, then it has the network.
+
+So, the comparison is like this:  You want a COKE. If it's in a register, this
+means it's right in front of you, so you pick it up and drink it. If it's in
+the L1 cache, it's in the fridge. You go get it and drink it. If it's in the
+other caches, it might be elsewhere in the house. If it's in main memory, you
+have to drive to the store and get one. If it's on disk, you have to travel to
+another country to get it. If it's on the network, you'll need to travel to the
+mooon to get a coke. So you get the idea. Anyway, that was way off topic, but I
+really like the comparison.
+
+Ok, so that was register machines. These are usually fast, and if you
+implement one, it is quite easy to translate your code to Intel x86 machine
+code, because it has registers, too.  But they are quite complex. You need to
+keep track of which registers are used, whose numbers you want to keep. Most
+VMs or CPUs only have a few registers. So you need a pretty advanced compiler
+to keep track of when to put data into memory, when to put them into registers,
+and in what order. This is usually solved with pretty advanced stuff like color
+allocation, the PHI-function and so on.
+
+But there's a simpler way: The stack machine. These have a data stack, and
+only, really, two implicit registers.  You can push numbers on the stack or pop
+them off. They come off in the reverse order you pushed them.  So, to add two
+numbers, you need to do this:
+
+  - push the number 3 on the stack, which will then be "3".
+  - push the number 2 on the stack, which is now "3 2"
+  - pop a number to register A, giving A=2, stack=3
+  - pop a number to register B, giving A=2, B=3, stack=Nothing
+  - add the numbers in the registers A and B, giving 6, and push this number on
+    the stack. The stack is now "6".
+  - Maybe you want to print this. The next instruction is "Print", and then you
+    take what's on the top of the stack, perhaps you pop it or just leave it,
+    and then you print it out.
+
+Ok, so why is this better? Because, you get implicit SCOPE. In the context of
+arithmetic, what you basically get is the parenthesis, for free. You don't need
+to calculate what's inside a parenthesis first and store it in a register, or
+in memory. Instead, to calculate something like:
+
+    (1+2) * 3 + (4*5) + 6 + 7 =
+    (3*3) + 20 + 6 + 7 =
+    9 + 20 + 6 + 7 =
+    29 + 13 =
+    42
+
+You can use the SHUNTING-YARD algorithm, invented by Dijkstra, not the Witcher
+3 guy, but the guy from the Netherlands and --- this is done by your compiler
+-- you can perform the calculation with simple instructions like:
+
+    - PUSH the number 1 -- stack: 1
+    - PUSH the number 2 -- stack: 1 2
+    - ADD them          -- stack: 3
+    - PUSH 3            -- stack: 3 3
+    - MULTIPLY          -- stack: 9
+    - PUSH 4            -- stack: 9 4
+    - PUSH 5            -- stack: 9 4 5
+    - MULTIPLY          -- stack: 9 20
+    - ADD               -- stack: 29
+    - PUSH 6            -- stack: 29 6
+    - ADD               -- stack: 35
+    - PUSH 7            -- stack: 35 7
+    - ADD               -- stack: 42
+
+You see? You get those side-computations, the stuff inside the parenthesis, for
+free, if you order your instructions correctly. You can also quite easily
+reorder the program so you get a lot of the same operations after each other:
+
+    - PUSH 1    -- stack: 1
+    - PUSH 2    -- stack: 1 2
+    - ADD       -- stack: 3
+    - PUSH 3    -- stack: 3 3
+    - MULTIPLY  -- stack: 9
+    - PUSH 4    -- stack: 9 4
+    - PUSH 5    -- stack: 9 4 5
+    - MULTIPLY  -- stack: 9 20
+  / - PUSH 6    -- stack: 9 20 6
+ |  - PUSH 7    -- stack: 9 20 6 7
+ |  - ADD       -- stack: 9 20 13
+ |  - ADD       -- stack: 9 33
+  \ - ADD       -- stack: 42
+
+We talked about doing stuff in parallel. Do you think we could do that here?
+Yes! We can do this concurrently. But that's not our main motivation, our main
+motivation is simplicity. And not using a lot of memory, except for the stack.
+
+I'll tell you what kind of VMs are stack based. The Python virtual machine. The
+Java virtual machine. The Common Language Runtime, powering C#, F# and whatver.
+Actually, most languages run on stack machines.
+
