@@ -304,6 +304,8 @@ his did). Do you know how this was proven?  By implementing brainfuck in it!
 In other words, if you can implement brainfuck, somehow, on your VM, it's
 Turing complete (on paper, not on any actual machine).  Scheme, for example,
 can be implemented with only 8 high-level instructions: IF, SET!, LAMBDA, 
+(John Cowan, scheme presentation) .......
 
-But this is yet another side track.  Scheme
+But this is yet another side track.
 
+... more: Crianza, instructions, etc...
