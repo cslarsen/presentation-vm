@@ -1,0 +1,75 @@
+What is a VM?
+
+It's a small program that takes really simple instructions and perform them.
+Instructions can be "take the number 1, then take the number 2, then add them
+together" or "check if the first number is bigger than the second. Store the
+result 1 if it is, or 0 if it's not", or "go to line number 100" or "if the
+previous operation returned zero, then jump to line number 200".
+
+In more detail, a VM must know about certain instructions. This is called the
+instruction set. The instructions can be "ADD TWO INTEGERS", or "JUMP (GOTO) A
+LINE". Or "FETCH A NUMBER FROM THIS MEMORY ADDRESS" or "STORE A NUMBER TO THIS
+ADDRESS". Often they will know about floating point numbers, so it can add them
+together and so on.
+
+Besides the instructions, it will probably need a way to store stuff. For
+example some memory. For fast computations, it can use special places of memory
+called registers. These are really fast memory locations. It may also need to
+access disk, or get some input from the keyboard, and probably write to a
+console or draw on a screen.  But if it has the right set of instructions, it
+can, in principle, disregarding speed and memory use, do ANYTHING that any
+other programming language can do. In fact, it may only need a few
+instructions.
+
+In fact, the language Brainf**k is Turing complete, meaning it can perform any
+computation possible, and it only consists of 8 instructions, plus a small
+amount of memory and some basic input and output mechanisms.
+
+These are:
+
+  < Move the data pointer backwards
+  > Move the data pointer forwards
+  + Increment the byte at the location of the data pointer
+  - Decrement the byte
+  . Read a byte from the input (keyboard or file) and store it at the data
+  pointer
+  , Write the byte at the data pointer to output
+  [ If the value of the data pointer is zero, jump to the corresponding
+  ]
+
+So, the input and output consists of using standard input and output. On UNIX,
+this is usually means input from a file and output to the console. But you
+could also read from the screen, although these locations cannot change once an
+instance of a brainfuck program has started.
+
+Finally, it has some memory. It consist of 30 thousand cells. If the data
+pointer falls off the end, it will roll back to the starting position, and vice
+versa. The same goes for the increment and decrement operations.
+
+Now, this language is TURING COMPLETE. This has been proven by demonstrating
+that you can implement a universal Turing machine as a brainfuck program. What
+this means is that brainfuck itself is powerful enough to compute ANY
+computation that is possible. To be more exact, because of the memory
+constraint, it's only TURING EQUIVALENT, because Turing completeness is only an
+idea, and requires infinite memory or storage.  So, to be very precise, it's
+just a really big state machine. I'll save you for the theory here, but all
+computers in the world are really Turing equivalent.
+
+So if you create a program in Javascript, Python --- whatever --- that can
+execute Brainfuck programs, you've made a virtual machine. This all sounds
+reasonable, but sometimes you actually need to implement things yourself to
+really understand all of the details.
+
+So, let's build a brainfuck interpreter. I'll do one in Python, and it looks
+like this:
+
+
+A
+
+The only difference would be in memory 
+universal Turing machine
+  this m
+Now, you can implement brainf**k
+Now, this is *exactly* how a CPU operates! Although, a CPU 
+
+This is exactly how a CPU operates, although it operates on machine code
