@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 import sys
+from collections import deque
 
 class Machine(object):
     def __init__(self, code, memory=30000):
-        self.stack = []
+        self.stack = deque([])
 
         self.code = code
         self.cptr = 0
@@ -12,7 +13,8 @@ class Machine(object):
         self.memory = [0]*memory
         self.mptr = 0
 
-        self.silent = True
+        # Memoization for skip_block
+        self.skip_memo = {}
 
     @property
     def byte(self):
@@ -26,11 +28,6 @@ class Machine(object):
         try:
             i = self.code[self.cptr]
             self.cptr += 1
-
-            if not self.silent:
-                sys.stdout.write("%s" % i)
-                sys.stdout.flush()
-
             return i
         except IndexError:
             raise StopIteration()
@@ -41,9 +38,9 @@ class Machine(object):
         elif i == "<":
             self.mptr -= 1
         elif i == "+":
-            self.byte += 1
+            self.byte = (self.byte + 1) % 256
         elif i == "-":
-            self.byte -= 1
+            self.byte = (self.byte - 1) % 256
         elif i == ".":
             sys.stdout.write(chr(self.byte))
             sys.stdout.flush()
@@ -63,6 +60,13 @@ class Machine(object):
             pass
 
     def skip_block(self):
+        # Memoize
+        if self.cptr in self.skip_memo:
+            self.cptr = self.skip_memo[self.cptr]
+            return
+        else:
+            cptr = self.cptr
+
         count = 1
         while count > 0:
             i = self.next()
@@ -70,6 +74,9 @@ class Machine(object):
                 count += 1
             elif i == "]":
                 count -= 1
+
+        # Memoize
+        self.skip_memo[cptr] = self.cptr
 
     def run(self):
         try:
