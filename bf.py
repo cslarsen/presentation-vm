@@ -48,13 +48,16 @@ class Machine(object):
         elif i == ",":
             self.byte = ord(sys.stdin.read(1))
         elif i == "[":
-            self.stack.append(self.cptr-1)
-            if self.byte == 0:
-                self.stack.pop()
+            if self.byte != 0:
+                self.stack.append(self.cptr-1)
+            else:
                 self.skip_block()
         elif i == "]":
-            self.cptr = self.stack[-1]
+            ret = self.stack.pop()
+            if self.byte != 0:
+                self.cptr = ret-1
         else:
+            # Ignore unknown instructions
             pass
 
     def skip_block(self):
