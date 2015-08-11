@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 
 class Machine(object):
@@ -55,7 +57,7 @@ class Machine(object):
         elif i == "]":
             ret = self.stack.pop()
             if self.byte != 0:
-                self.cptr = ret-1
+                self.cptr = ret
         else:
             # Ignore unknown instructions
             pass
