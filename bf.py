@@ -38,9 +38,9 @@ class Machine(object):
         elif i == "<":
             self.mptr -= 1
         elif i == "+":
-            self.byte = (self.byte + 1) % 256
+            self.byte += 1
         elif i == "-":
-            self.byte = (self.byte - 1) % 256
+            self.byte -= 1
         elif i == ".":
             sys.stdout.write(chr(self.byte))
             sys.stdout.flush()
