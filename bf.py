@@ -4,7 +4,7 @@ import sys
 from collections import deque
 
 class Machine(object):
-    def __init__(self, code, memory=30000):
+    def __init__(self, code, memory=100000):
         self.stack = deque([])
 
         self.code = code
