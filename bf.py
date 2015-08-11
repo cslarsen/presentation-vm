@@ -21,27 +21,23 @@ class Machine(object):
         self.memory[self.mptr] = value
 
     def next(self):
-        if self.cptr >= len(self.code):
+        try:
+            i = self.code[self.cptr]
+            self.cptr += 1
+
+            if not self.silent:
+                sys.stdout.write("%s" % i)
+                sys.stdout.flush()
+
+            return i
+        except IndexError:
             raise StopIteration()
 
-        i = self.code[self.cptr]
-        self.cptr += 1
-
-        if not self.silent:
-            sys.stdout.write("%s" % i)
-            sys.stdout.flush()
-
-        return i
-
-    def step(self):
-        i = self.next()
-        self.dispatch(i)
-
     def dispatch(self, i):
-        if i == "<":
-            self.mptr -= 1
-        elif i == ">":
+        if i == ">":
             self.mptr += 1
+        elif i == "<":
+            self.mptr -= 1
         elif i == "+":
             self.byte += 1
         elif i == "-":
@@ -50,13 +46,12 @@ class Machine(object):
             sys.stdout.write(chr(self.byte))
             sys.stdout.flush()
         elif i == ",":
-            sys.stdout.flush()
             self.byte = ord(sys.stdin.read(1))
         elif i == "[":
             self.stack.append(self.cptr-1)
             if self.byte == 0:
-                self.skip_block()
                 self.stack.pop()
+                self.skip_block()
         elif i == "]":
             self.cptr = self.stack[-1]
         else:
@@ -74,7 +69,7 @@ class Machine(object):
     def run(self):
         try:
             while True:
-                self.step()
+                self.dispatch(self.next())
         except StopIteration:
             pass
 
