@@ -1,39 +1,65 @@
+#!/usr/bin/env python
+
 import sys
 
-pointer = 0
+memptr = 0
 memory = [0] * 30000
-program = open(sys.argv[1], "rb")
+
+codeptr = 0
+code = list(open(sys.argv[1], "rb").read())
+code.append(None) # end-of-code marker
+
+loops = []
+
+def debug():
+    print("code[%d] == '%c' memory[%d] == %d" % (codeptr, code[codeptr], memptr,
+        int(memory[memptr])))
 
 while True:
-    instruction = program.read(1)
 
-    if instruction == "":
-        break # program is finished
+    instruction = code[codeptr]
+    #debug()
+
+    if instruction is None:
+        break # code is finished
     if instruction == ">":
-        pointer += 1
-        if pointer > len(memory):
-            pointer = 0
+        memptr += 1
+        if memptr > len(memory):
+            memptr = 0
     elif instruction == "<":
-        pointer -= 1
-        if pointer < 0:
-            pointer = len(memory)-1
+        memptr -= 1
+        if memptr < 0:
+            memptr = len(memory)-1
     elif instruction == "+":
-        memory[pointer] += 1
+        memory[memptr] += 1
     elif instruction == "-":
-        memory[pointer] -= 1
+        memory[memptr] -= 1
     elif instruction == ".":
-        sys.stdout.write(chr(memory[pointer]))
+        sys.stdout.write(chr(memory[memptr]))
         sys.stdout.flush()
     elif instruction == ",":
-        memory[pointer] = ord(sys.stdin.read(1))
+        memory[memptr] = ord(sys.stdin.read(1))
     elif instruction == "[":
-        if memory[pointer] == 0:
-            while program.read(1) != "]":
-                pass
+        loops.append(codeptr)
+        if memory[memptr] == 0:
+            # Scan to next matching "]"
+            count = 1
+            codeptr += 1
+            while count != 0:
+                if code[codeptr] == "[":
+                    count += 1
+                elif code[codeptr] == "]":
+                    count -= 1
+                codeptr += 1
     elif instruction == "]":
-        continue
+        if memory[memptr] == 0:
+            codeptr = loops.pop()
+            continue
+        else:
+            codeptr = loops[-1]
+            continue
     else:
-        # Skip unknown instructions. 
-        # This makes it possible to write
-        # comments in the code!
-        continue
+        # Skip unknown instructions
+        pass
+
+    codeptr += 1
