@@ -83,6 +83,17 @@ def compile(source, memsize=100000):
     right = lambda: move(1)
     left = lambda: move(-1)
 
+    # Build jump map
+    def build_jumpmap():
+        return {}
+    jumpmap = build_jumpmap()
+
+    def start_loop():
+        pass
+
+    def end_loop():
+        pass
+
     # Translate Brainfuck to Python bytecode
     for op in source:
         if op == ">":
@@ -97,6 +108,10 @@ def compile(source, memsize=100000):
             dot()
         elif op == ",":
             comma()
+        elif op == "[":
+            start_loop()
+        elif op == "]":
+            end_loop()
         else:
             pass
 
@@ -133,7 +148,7 @@ if __name__ == "__main__":
         with open(filename, "rt") as file:
             program = make_function(to_code(compile(file.read())))
             try:
-                retval = program()
+                program()
             except Exception as e:
                 print("Error: %s" % e)
                 sys.exit(1)
