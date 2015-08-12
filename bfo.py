@@ -32,7 +32,7 @@ def optimize_source(source):
                 break
     return source
 
-def compile(source, memsize=100000):
+def compile(source, memsize=300000, flush=True):
     c = []
 
     # TODO:
@@ -95,11 +95,12 @@ def compile(source, memsize=100000):
         c.append((bp.POP_TOP, None))
 
         # Flush
-        c.append((bp.LOAD_GLOBAL, "sys"))
-        c.append((bp.LOAD_ATTR, "stdout"))
-        c.append((bp.LOAD_ATTR, "flush"))
-        c.append((bp.CALL_FUNCTION, 0))
-        c.append((bp.POP_TOP, None))
+        if flush:
+            c.append((bp.LOAD_GLOBAL, "sys"))
+            c.append((bp.LOAD_ATTR, "stdout"))
+            c.append((bp.LOAD_ATTR, "flush"))
+            c.append((bp.CALL_FUNCTION, 0))
+            c.append((bp.POP_TOP, None))
 
     def comma(count):
         c.append((bp.LOAD_GLOBAL, "ord"))
@@ -213,18 +214,23 @@ def make_function(codeobj):
 
 if __name__ == "__main__":
     export = False
+    flush = True
     for arg in sys.argv[1:]:
         if arg == "-e":
             export = True
-            break
+        elif arg == "-b":
+            flush = False
 
     for filename in sys.argv[1:]:
         if filename[0] == "-":
             continue
         with open(filename, "rt") as file:
             name = os.path.splitext(os.path.basename(filename))[0]
-            program = make_function(to_code(compile(list(file.read())),
-                name=name))
+
+            source = file.read()
+            compiled = compile(list(source), flush=flush)
+            program = make_function(to_code(compiled, name=name))
+
             if not export:
                 program()
             else:
