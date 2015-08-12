@@ -51,15 +51,29 @@ def compile(source, memsize=100000):
     minus = lambda: add(-1)
 
     def dot():
+        # Prepare call to sys.stdout.write(chr(...))
         c.append((bp.LOAD_GLOBAL, "sys"))
         c.append((bp.LOAD_ATTR, "stdout"))
         c.append((bp.LOAD_ATTR, "write"))
         c.append((bp.LOAD_GLOBAL, "chr"))
+
+        # Get value
         c.append((bp.LOAD_FAST, "memory"))
         c.append((bp.LOAD_FAST, "ptr"))
         c.append((bp.BINARY_SUBSCR, None))
+
+        # Call chr
         c.append((bp.CALL_FUNCTION, 1))
+        # Call sys.stdout.write
         c.append((bp.CALL_FUNCTION, 1))
+        # Drop return-value
+        c.append((bp.POP_TOP, None))
+
+        # Flush
+        c.append((bp.LOAD_GLOBAL, "sys"))
+        c.append((bp.LOAD_ATTR, "stdout"))
+        c.append((bp.LOAD_ATTR, "flush"))
+        c.append((bp.CALL_FUNCTION, 0))
         c.append((bp.POP_TOP, None))
 
     def comma():
