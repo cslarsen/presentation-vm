@@ -1,0 +1,57 @@
+NAND(0, 0) ==> 1
+NAND(0, 1) ==> 1
+NAND(1, 0) ==> 1
+NAND(1, 1) ==> 0
+
+To make NOT, always set first input to 1:
+NOT(x) = NAND(1, x)
+  NOT(0) = NAND(1, 0) ==> 1
+  NOT(1) = NAND(1, 1) ==> 0
+
+Then AND(x, y) is easy:
+AND(x,y) = NOT(NAND(x, y))
+  AND(0,0) ==> 0
+  AND(0,1) ==> 0
+  AND(1,0) ==> 0
+  AND(1,1) ==> 1
+
+OR is like this
+  OR(0,0) ==> 0
+  OR(0,1) ==> 1
+  OR(1,0) ==> 1
+  OR(1,1) ==> 1
+It's a bit more tricky to implement with NAND. But playing around with it (or
+cheating by looking at Wikipedia), you see that
+OR(x,y) = NAND(NOT(x), NOT(y))
+  All possible inputs gives this:
+    0 0 ==> NAND(1,1) ==> 0
+    0 1 ==> NAND(1,0) ==> 1
+    1 0 ==> NAND(0,1) ==> 1
+    1 1 ==> NAND(0,0) ==> 1
+
+NOR is now easy:
+  NOR(x,y) == NOT(OR(x,y))
+
+XOR(x,y)
+    0 0 ==> 0
+    0 1 ==> 1
+    1 0 ==> 1
+    1 1 ==> 0
+So, if x==y then we should output 0, otherwise 1:
+  AND(x,y)        NOR(x,y)
+  0 0 ==> 0       1
+  0 1 ==> 0       0
+  1 0 ==> 0       0
+  1 1 ==> 1       0
+So we can do x==y with AND(x,y) in the case of x=y=1
+But what about x==y in the case of x=y=0?
+NOR can do that. So, if AND(x,y)==1 or NOR(x,y)==1, output 1:
+
+XOR(x,y) = OR(AND(x,y), NOR(x,y))
+    0 0 ==> OR(0, 1) ==> 1
+    0 1 ==> OR(0, 0) ==> 0
+    1 0 ==> OR(0, 0) ==> 0
+    1 1 ==> OR(1, 0) ==> 1
+
+So now that we have NOT, AND, OR, NOR, XOR, NAND we can build any other logic
+circuits from these, including registers, arithmetic --- up to a whole computer.
