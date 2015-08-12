@@ -83,19 +83,39 @@ def compile(source, memsize=100000):
     right = lambda: move(1)
     left = lambda: move(-1)
 
-    # Build jump map
-    def build_jumpmap():
-        return {}
-    jumpmap = build_jumpmap()
+    labels = []
+    labelpos = {}
 
-    def start_loop():
-        pass
+    def start_loop(label):
+        c.append((label, None))
+        c.append((bp.LOAD_FAST, "memory"))
+        c.append((bp.LOAD_FAST, "ptr"))
+        c.append((bp.BINARY_SUBSCR, None))
+        c.append((bp.LOAD_CONST, 0))
+        c.append((bp.COMPARE_OP, "=="))
 
-    def end_loop():
-        pass
+        # We don't know the label of the end-of-loop position, so store a
+        # temporary marker and get back to it later
+        c.append((bp.POP_JUMP_IF_TRUE, None))
+        labelpos[label] = len(c)-1
+
+    def end_loop(startlabel):
+        endlabel = bp.Label()
+
+        # Update goto end-of-loop label
+        start = labelpos[startlabel]
+        c[start] = (bp.POP_JUMP_IF_TRUE, endlabel)
+
+        c.append((endlabel, None))
+        c.append((bp.LOAD_FAST, "memory"))
+        c.append((bp.LOAD_FAST, "ptr"))
+        c.append((bp.BINARY_SUBSCR, None))
+        c.append((bp.LOAD_CONST, 0))
+        c.append((bp.COMPARE_OP, "=="))
+        c.append((bp.POP_JUMP_IF_FALSE, startlabel))
 
     # Translate Brainfuck to Python bytecode
-    for op in source:
+    for position, op in enumerate(source):
         if op == ">":
             right()
         elif op == "<":
@@ -109,9 +129,10 @@ def compile(source, memsize=100000):
         elif op == ",":
             comma()
         elif op == "[":
-            start_loop()
+            labels.append(bp.Label())
+            start_loop(labels[-1])
         elif op == "]":
-            end_loop()
+            end_loop(labels.pop())
         else:
             pass
 
@@ -119,7 +140,6 @@ def compile(source, memsize=100000):
     c.append((bp.LOAD_CONST, None))
     c.append((bp.RETURN_VALUE, None))
     return c
-
 
 def to_code(bytecode, name = "", docstring="", filename=""):
     arglist = ()
