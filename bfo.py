@@ -2,6 +2,7 @@
 
 import byteplay as bp
 import sys
+import os
 
 def optimize_source(source):
     # First pass: Remove any unknown operators
@@ -211,7 +212,23 @@ def make_function(codeobj):
     return func
 
 if __name__ == "__main__":
+    export = False
+    for arg in sys.argv[1:]:
+        if arg == "-e":
+            export = True
+            break
+
     for filename in sys.argv[1:]:
+        if filename[0] == "-":
+            continue
         with open(filename, "rt") as file:
-            program = make_function(to_code(compile(list(file.read()))))
-            program()
+            name = os.path.splitext(os.path.basename(filename))[0]
+            program = make_function(to_code(compile(list(file.read())),
+                name=name))
+            if not export:
+                program()
+            else:
+                import marshal
+                s = marshal.dumps(program.func_code)
+                with open(name + ".marshalled", "wb") as f:
+                    f.write(s)
