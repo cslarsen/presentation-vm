@@ -3,7 +3,7 @@
 import byteplay as bp
 import sys
 
-def compile(source):
+def compile_example(source):
     code = []
     code.append((bp.LOAD_CONST, "Hello there"))
     code.append((bp.PRINT_ITEM, None))
@@ -11,6 +11,56 @@ def compile(source):
     code.append((bp.LOAD_CONST, None))
     code.append((bp.RETURN_VALUE, None))
     return code
+
+def compile(source, memsize=100000):
+    c = []
+
+    # TODO:
+    # Labels: Each [ and ] need an associated label,
+    #         so at "[" we can JZ while_end and at
+    #         "]" we can JNZ while_begin
+
+    # import sys
+    c.append((bp.LOAD_CONST, -1))
+    c.append((bp.LOAD_CONST, None))
+    c.append((bp.IMPORT_NAME, "sys"))
+    c.append((bp.STORE_FAST, "sys"))
+
+    # memory = [0]*memsize
+    c.append((bp.LOAD_CONST, 0))
+    c.append((bp.BUILD_LIST, 1))
+    c.append((bp.LOAD_CONST, memsize))
+    c.append((bp.BINARY_MULTIPLY, None))
+    c.append((bp.STORE_FAST, "memory"))
+
+    # ptr = 0
+    c.append((bp.LOAD_CONST, 0))
+    c.append((bp.STORE_FAST, "ptr"))
+
+    def add(value):
+        c.append((bp.LOAD_FAST, "memory"))
+        c.append((bp.LOAD_FAST, "ptr"))
+        c.append((bp.DUP_TOPX, 2))
+        c.append((bp.BINARY_SUBSCR, None))
+        c.append((bp.LOAD_CONST, value))
+        c.append((bp.INPLACE_ADD, None))
+        c.append((bp.ROT_THREE, None))
+        c.append((bp.STORE_SUBSCR, None))
+
+    plus = lambda: add(1)
+    minus = lambda: add(-1)
+
+    def dot():
+        c.append((bp.LOAD_FAST, "memory"))
+        c.append((bp.LOAD_FAST, "ptr"))
+        c.append((bp.BINARY_SUBSCR, None))
+        c.append((bp.PRINT_ITEM, None))
+
+    # return None
+    c.append((bp.LOAD_CONST, None))
+    c.append((bp.RETURN_VALUE, None))
+    return c
+
 
 def to_code(bytecode, name = "", docstring="", filename=""):
     arglist = ()
