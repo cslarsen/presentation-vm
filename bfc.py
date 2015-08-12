@@ -51,10 +51,54 @@ def compile(source, memsize=100000):
     minus = lambda: add(-1)
 
     def dot():
+        c.append((bp.LOAD_GLOBAL, "sys"))
+        c.append((bp.LOAD_ATTR, "stdout"))
+        c.append((bp.LOAD_ATTR, "write"))
+        c.append((bp.LOAD_GLOBAL, "chr"))
         c.append((bp.LOAD_FAST, "memory"))
         c.append((bp.LOAD_FAST, "ptr"))
         c.append((bp.BINARY_SUBSCR, None))
-        c.append((bp.PRINT_ITEM, None))
+        c.append((bp.CALL_FUNCTION, 1))
+        c.append((bp.CALL_FUNCTION, 1))
+        c.append((bp.POP_TOP, None))
+
+    def comma():
+        c.append((bp.LOAD_GLOBAL, "ord"))
+        c.append((bp.LOAD_FAST, "sys"))
+        c.append((bp.LOAD_ATTR, "stdin"))
+        c.append((bp.LOAD_ATTR, "read"))
+        c.append((bp.LOAD_CONST, 1))
+        c.append((bp.CALL_FUNCTION, 1))
+        c.append((bp.CALL_FUNCTION, 1))
+        c.append((bp.LOAD_FAST, "memory"))
+        c.append((bp.LOAD_FAST, "ptr"))
+        c.append((bp.STORE_SUBSCR, None))
+
+    def move(amount):
+        c.append((bp.LOAD_FAST, "ptr"))
+        c.append((bp.LOAD_CONST, amount))
+        c.append((bp.INPLACE_ADD, None))
+        c.append((bp.STORE_FAST, "ptr"))
+
+    right = lambda: move(1)
+    left = lambda: move(-1)
+
+    # Translate Brainfuck to Python bytecode
+    for op in source:
+        if op == ">":
+            right()
+        elif op == "<":
+            left()
+        elif op == "+":
+            plus()
+        elif op == "-":
+            minus()
+        elif op == ".":
+            dot()
+        elif op == ",":
+            comma()
+        else:
+            pass
 
     # return None
     c.append((bp.LOAD_CONST, None))
