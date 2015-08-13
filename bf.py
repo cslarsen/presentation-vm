@@ -4,7 +4,7 @@ import sys
 from collections import deque
 
 class Machine(object):
-    def __init__(self, code, memory=100000):
+    def __init__(self, code, memory=100000, modulus=None):
         self.stack = deque([])
 
         self.code = code
@@ -15,6 +15,8 @@ class Machine(object):
 
         # Memoization for skip_block
         self.skip_memo = {}
+
+        self.mod = modulus
 
     @property
     def byte(self):
@@ -38,9 +40,15 @@ class Machine(object):
         elif i == "<":
             self.mptr -= 1
         elif i == "+":
-            self.byte += 1
+            if not self.mod:
+                self.byte += 1
+            else:
+                self.byte = (self.byte + 1) % self.mod
         elif i == "-":
-            self.byte -= 1
+            if not self.mod:
+                self.byte -= 1
+            else:
+                self.byte = (self.byte - 1) % self.mod
         elif i == ".":
             sys.stdout.write(chr(self.byte))
             sys.stdout.flush()
@@ -86,7 +94,18 @@ class Machine(object):
             pass
 
 if __name__ == "__main__":
+    modulus = None
+    for a in sys.argv[1:]:
+        if a == "-u8":
+            modulus = 2**8
+        elif a == "-u16":
+            modulus = 2**16
+        elif a == "-u32":
+            modulus = 2**32
+
     for f in sys.argv[1:]:
+        if f[0] == "-":
+            continue
         with open(f, "rb") as file:
-            m = Machine(list(file.read()))
+            m = Machine(list(file.read()), modulus=modulus)
             m.run()
