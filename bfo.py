@@ -4,10 +4,18 @@ import byteplay as bp
 import sys
 import os
 
-def optimize_source(source):
+def optimize_source(source, verbose=False):
     # First pass: Remove any unknown operators
+    if verbose:
+        sys.stderr.write("original source size: %d bytes\n" % len(source))
+
     source = filter(lambda x: x in ["+", "-", ">", "<", ".", ",", "[", "]"],
             source)
+
+    if verbose:
+        sys.stderr.write("filtered source size: %d bytes\n" % len(source))
+        sys.stderr.write("optimizing ...\n")
+        sys.stderr.flush()
 
     # Truncate long sequences of the same operation
     keep_running = True
@@ -30,9 +38,15 @@ def optimize_source(source):
                 # Start over again
                 keep_running = True
                 break
+
+    if verbose:
+        sys.stderr.write("optimized source size: %d instructions\n" % len(source))
+        if len(source) > 2**12:
+            sys.stderr.write("warning: >4096 instructions may trigger extended jumps\n")
+
     return source
 
-def compile(source, memsize=300000, flush=True, modulus=None):
+def compile(source, memsize=300000, flush=True, modulus=None, verbose=False):
     c = []
 
     # TODO:
@@ -167,7 +181,7 @@ def compile(source, memsize=300000, flush=True, modulus=None):
         c.append((bp.POP_JUMP_IF_FALSE, startlabel))
 
     # Translate Brainfuck to Python bytecode
-    for pos, op in enumerate(optimize_source(source)):
+    for pos, op in enumerate(optimize_source(source, verbose=verbose)):
         start = len(c)-1
 
         count = 1
@@ -228,6 +242,7 @@ if __name__ == "__main__":
     export = False
     flush = True
     modulus = None
+    verbose = False
     for arg in sys.argv[1:]:
         if arg == "-e":
             export = True
@@ -239,6 +254,8 @@ if __name__ == "__main__":
             modulus = 2**16
         elif arg == "-u32":
             modulus = 2**32
+        elif arg == "-v":
+            verbose = True
 
     for filename in sys.argv[1:]:
         if filename[0] == "-":
@@ -247,7 +264,8 @@ if __name__ == "__main__":
             name = os.path.splitext(os.path.basename(filename))[0]
 
             source = file.read()
-            compiled = compile(list(source), flush=flush, modulus=modulus)
+            compiled = compile(list(source), flush=flush, modulus=modulus,
+                    verbose=verbose)
             program = make_function(to_code(compiled, name=name))
 
             if not export:
