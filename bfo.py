@@ -32,7 +32,7 @@ def optimize_source(source):
                 break
     return source
 
-def compile(source, memsize=300000, flush=True):
+def compile(source, memsize=300000, flush=True, modulus=None):
     c = []
 
     # TODO:
@@ -58,14 +58,26 @@ def compile(source, memsize=300000, flush=True):
     c.append((bp.STORE_FAST, "ptr"))
 
     def add(value):
-        c.append((bp.LOAD_FAST, "memory"))
-        c.append((bp.LOAD_FAST, "ptr"))
-        c.append((bp.DUP_TOPX, 2))
-        c.append((bp.BINARY_SUBSCR, None))
-        c.append((bp.LOAD_CONST, value))
-        c.append((bp.INPLACE_ADD, None))
-        c.append((bp.ROT_THREE, None))
-        c.append((bp.STORE_SUBSCR, None))
+        if modulus is None:
+            c.append((bp.LOAD_FAST, "memory"))
+            c.append((bp.LOAD_FAST, "ptr"))
+            c.append((bp.DUP_TOPX, 2))
+            c.append((bp.BINARY_SUBSCR, None))
+            c.append((bp.LOAD_CONST, value))
+            c.append((bp.INPLACE_ADD, None))
+            c.append((bp.ROT_THREE, None))
+            c.append((bp.STORE_SUBSCR, None))
+        else:
+            c.append((bp.LOAD_FAST, "memory"))
+            c.append((bp.LOAD_FAST, "ptr"))
+            c.append((bp.BINARY_SUBSCR, None))
+            c.append((bp.LOAD_CONST, value))
+            c.append((bp.BINARY_ADD, None))
+            c.append((bp.LOAD_CONST, modulus))
+            c.append((bp.BINARY_MODULO, None))
+            c.append((bp.LOAD_FAST, "memory"))
+            c.append((bp.LOAD_FAST, "ptr"))
+            c.append((bp.STORE_SUBSCR, None))
 
     plus = lambda: add(1)
     minus = lambda: add(-1)
@@ -215,11 +227,18 @@ def make_function(codeobj):
 if __name__ == "__main__":
     export = False
     flush = True
+    modulus = None
     for arg in sys.argv[1:]:
         if arg == "-e":
             export = True
         elif arg == "-b":
             flush = False
+        elif arg == "-u8":
+            modulus = 2**8
+        elif arg == "-u16":
+            modulus = 2**16
+        elif arg == "-u32":
+            modulus = 2**32
 
     for filename in sys.argv[1:]:
         if filename[0] == "-":
@@ -228,7 +247,7 @@ if __name__ == "__main__":
             name = os.path.splitext(os.path.basename(filename))[0]
 
             source = file.read()
-            compiled = compile(list(source), flush=flush)
+            compiled = compile(list(source), flush=flush, modulus=modulus)
             program = make_function(to_code(compiled, name=name))
 
             if not export:
