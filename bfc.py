@@ -12,7 +12,7 @@ def compile_example(source):
     code.append((bp.RETURN_VALUE, None))
     return code
 
-def compile(source, memsize=100000):
+def compile(source, memsize=100000, modulus=None):
     c = []
 
     # TODO:
@@ -38,14 +38,26 @@ def compile(source, memsize=100000):
     c.append((bp.STORE_FAST, "ptr"))
 
     def add(value):
-        c.append((bp.LOAD_FAST, "memory"))
-        c.append((bp.LOAD_FAST, "ptr"))
-        c.append((bp.DUP_TOPX, 2))
-        c.append((bp.BINARY_SUBSCR, None))
-        c.append((bp.LOAD_CONST, value))
-        c.append((bp.INPLACE_ADD, None))
-        c.append((bp.ROT_THREE, None))
-        c.append((bp.STORE_SUBSCR, None))
+        if modulus is None:
+            c.append((bp.LOAD_FAST, "memory"))
+            c.append((bp.LOAD_FAST, "ptr"))
+            c.append((bp.DUP_TOPX, 2))
+            c.append((bp.BINARY_SUBSCR, None))
+            c.append((bp.LOAD_CONST, value))
+            c.append((bp.INPLACE_ADD, None))
+            c.append((bp.ROT_THREE, None))
+            c.append((bp.STORE_SUBSCR, None))
+        else:
+            c.append((bp.LOAD_FAST, "memory"))
+            c.append((bp.LOAD_FAST, "ptr"))
+            c.append((bp.BINARY_SUBSCR, None))
+            c.append((bp.LOAD_CONST, value))
+            c.append((bp.BINARY_ADD, None))
+            c.append((bp.LOAD_CONST, modulus))
+            c.append((bp.BINARY_MODULO, None))
+            c.append((bp.LOAD_FAST, "memory"))
+            c.append((bp.LOAD_FAST, "ptr"))
+            c.append((bp.STORE_SUBSCR, None))
 
     plus = lambda: add(1)
     minus = lambda: add(-1)
@@ -178,9 +190,24 @@ def make_function(codeobj):
     return func
 
 if __name__ == "__main__":
+    modulus = None
+    for a in sys.argv[1:]:
+        if a == "-u8":
+            modulus = 2**8
+        elif a == "-u16":
+            modulus = 2**16
+        elif a == "-u32":
+            modulus = 2**32
+
     for filename in sys.argv[1:]:
+        if filename[0] == "-":
+            continue
+
         with open(filename, "rt") as file:
-            program = make_function(to_code(compile(file.read())))
+            source = list(file.read())
+            code = compile(source, modulus=modulus)
+            program = make_function(to_code(code))
+
             try:
                 program()
             except Exception as e:
