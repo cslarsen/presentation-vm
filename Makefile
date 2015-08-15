@@ -5,4 +5,4 @@ LDFLAGS = -llightning
 all: $(TARGETS)
 
 clean:
-	rm -f $(TARGET)S
+	rm -f $(TARGETS)
