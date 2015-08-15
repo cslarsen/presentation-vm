@@ -1,5 +1,8 @@
 #include <stdio.h>
+
+extern "C" {
 #include <lightning.h>
+}
 
 static jit_state_t *_jit;
 

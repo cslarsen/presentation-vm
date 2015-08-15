@@ -1,6 +1,6 @@
 CFLAGS = -O3 -march=native -mtune=native
 TARGETS := bfl
-LDFLAGS = -llightning
+LDFLAGS = -L/usr/local/lib -llightning
 
 all: $(TARGETS)
 
