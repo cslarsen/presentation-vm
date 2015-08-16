@@ -1,14 +1,17 @@
-#include <stdio.h>
+#include <errno.h>
 #include <stdint.h>
+#include <stdio.h>
+
 #include <stack>
 
 extern "C" {
 #include <lightning.h>
 }
 
-static jit_state_t *_jit;
 typedef void (*vfptr)(void);
 typedef std::pair<jit_node_t*, jit_node_t*> label_pair;
+
+static jit_state_t *_jit;
 
 jit_pointer_t compile(FILE *f, uint8_t *memory)
 {
@@ -17,6 +20,7 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
   jit_movi(JIT_V1, 0); // offset
 
   std::stack<label_pair> loops;
+  jit_node_t *while_begin, *while_end;
 
   for ( int c=0; c != EOF; c = fgetc(f) ) {
     switch ( c ) {
@@ -49,24 +53,21 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
         jit_stxr(JIT_V0, JIT_V1, JIT_V2);
         break;
       case '[': {
-        label_pair pair;
-        pair.first = jit_label();
-        pair.second = jit_forward();
+        label_pair p;
+        p.first = jit_label();
         jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
-        jit_node_t* jump = jit_beqi(JIT_V2, 0);
-        jit_patch_at(jump, pair.second);
-
-        loops.push(pair);
+        p.second = jit_forward();
+        jit_node_t *j = jit_beqi(JIT_V2, 0);
+        jit_patch_at(j, p.second);
+        loops.push(p);
       } break;
       case ']': {
-        label_pair pair = loops.top();
+        label_pair p = loops.top();
         loops.pop();
-
-        jit_node_t* p = jit_movi(JIT_V2, 0);
-        jit_jmpr(JIT_V2);
-        jit_patch_at(p, pair.first);
-        jit_link(pair.second);
-
+        jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
+        jit_node_t *j = jit_bnei(JIT_V2, 0);
+        jit_patch_at(j, p.first);
+        jit_link(p.second);
         break;
       }
       default:
@@ -111,10 +112,16 @@ int main(int argc, char *argv[])
   _jit = jit_new_state();
 
   for ( size_t n=1; n<argc; ++n ) {
-    if ( argv[n][0] == '-' )
+    if ( argv[n][0] == '-' && argv[n][1] != '\0' )
       continue;
-    FILE *f = fopen(argv[n], "rt");
-    if ( f ) {
+
+    FILE *f = !strcmp(argv[n], "-")? stdin : fopen(argv[n], "rt");
+
+    if ( !f ) {
+      int error = errno;
+      fprintf(stderr, "Could not open %s: %s\n", argv[n], strerror(error));
+      return 1;
+    } else {
       Machine p;
       p.compile(f);
       fclose(f);
