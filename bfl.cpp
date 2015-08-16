@@ -52,6 +52,16 @@ struct Program {
           jit_addi(JIT_R1, JIT_R1, -1);
           jit_stxr(JIT_R0, JIT_R1, JIT_R2);
           break;
+        case '.':
+          jit_ldxr(JIT_R2, JIT_R0, JIT_R1);
+          jit_pushargr(JIT_R2);
+//          jit_finishi(putchar);
+          // call putchar with JIR_R2 as arg
+          break;
+        case ',':
+          jit_movi(JIT_R2, 0); // should be result of getchar
+          jit_stxr(JIT_R0, JIT_R1, JIT_R2);
+          break;
         case '[':
           break;
         case ']':
