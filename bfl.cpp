@@ -9,9 +9,31 @@ extern "C" {
 }
 
 typedef void (*vfptr)(void);
-typedef std::pair<jit_node_t*, jit_node_t*> label_pair;
 
 static jit_state_t *_jit;
+
+struct Loop {
+  jit_node_t *body;
+  jit_node_t *end;
+
+  Loop(jit_node_t* body_ = NULL, jit_node_t* end_ = NULL):
+    body(body_), end(end_)
+  {
+  }
+
+  Loop(const Loop& l):
+    body(l.body), end(l.end)
+  {
+  }
+
+  Loop& operator=(const Loop& l) {
+    if ( this != &l ) {
+      body = l.body;
+      end = l.end;
+    }
+    return *this;
+  }
+};
 
 jit_pointer_t compile(FILE *f, uint8_t *memory)
 {
@@ -19,7 +41,7 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
   jit_movi(JIT_V0, reinterpret_cast<jit_word_t>(memory)); // base
   jit_movi(JIT_V1, 0); // offset
 
-  std::stack<label_pair> loops;
+  std::stack<Loop> loops;
 
   for ( int c=0; c != EOF; c = fgetc(f) ) {
     switch ( c ) {
@@ -52,21 +74,29 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
         jit_stxr(JIT_V0, JIT_V1, JIT_V2);
         break;
       case '[': {
-        label_pair p;
-        p.first = jit_label();
+        Loop loop;
+
+        // if ( *value == 0 ) goto loop.end;
+        loop.end = jit_forward();
         jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
-        p.second = jit_forward();
         jit_node_t *j = jit_beqi(JIT_V2, 0);
-        jit_patch_at(j, p.second);
-        loops.push(p);
+        jit_patch_at(j, loop.end);
+
+        // mark loop body
+        loop.body = jit_label();
+        loops.push(loop);
       } break;
       case ']': {
-        label_pair p = loops.top();
+        Loop loop = loops.top();
         loops.pop();
+
+        // if ( *value != 0 ) goto loop.body;
         jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
         jit_node_t *j = jit_bnei(JIT_V2, 0);
-        jit_patch_at(j, p.first);
-        jit_link(p.second);
+        jit_patch_at(j, loop.body);
+
+        // mark loop end
+        jit_link(loop.end);
         break;
       }
       default:
@@ -123,11 +153,11 @@ int main(int argc, char *argv[])
       Machine p;
       p.compile(f);
       fclose(f);
+      jit_clear_state();
       p.run();
     }
   }
 
-  jit_clear_state();
   jit_destroy_state();
   finish_jit();
   return 0;
