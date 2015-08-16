@@ -25,24 +25,32 @@ struct Program {
 
   void compile(FILE *f)
   {
+    printf("compiling\n");
     jit_prolog();
 
-    // Registers:
     // R0 -- base pointer to memory
-    jit_movi(JIT_R0, 0);
+    jit_movi(JIT_R0, reinterpret_cast<jit_word_t>(&memory[0]));
 
     // R1 -- offset pointer to memory
- //   jit_movi(JIT_R1, 0);
+    jit_movi(JIT_R1, 0);
 
     for ( int c=0; c != EOF; c = fgetc(f) ) {
       switch ( c ) {
         case '<':
+          jit_addi(JIT_R1, JIT_R1, -1);
           break;
         case '>':
+          jit_addi(JIT_R1, JIT_R1, 1);
           break;
         case '+':
+          jit_ldxr(JIT_R2, JIT_R0, JIT_R1);
+          jit_addi(JIT_R1, JIT_R1, 1);
+          jit_stxr(JIT_R0, JIT_R1, JIT_R2);
           break;
         case '-':
+          jit_ldxr(JIT_R2, JIT_R0, JIT_R1);
+          jit_addi(JIT_R1, JIT_R1, -1);
+          jit_stxr(JIT_R0, JIT_R1, JIT_R2);
           break;
         case '[':
           break;
