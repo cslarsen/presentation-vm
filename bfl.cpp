@@ -47,12 +47,16 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
         jit_retval(JIT_V2);
         jit_stxr(JIT_V0, JIT_V1, JIT_V2);
         break;
-      case '[':
-        labels.push(jit_indirect());
-        break;
+      case '[': {
+        jit_node_t* label = jit_label();
+        labels.push(label);
+      } break;
       case ']': {
-        jit_node_t *label = labels.top();
+        jit_node_t* label = labels.top();
         labels.pop();
+        jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
+        jit_node_t* jump = jit_bnei(JIT_V2, 0);
+        jit_patch_at(jump, label);
         break;
       }
       default:
