@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 
 extern "C" {
 #include <lightning.h>
@@ -6,27 +7,45 @@ extern "C" {
 
 static jit_state_t *_jit;
 
-void compile(FILE *f)
-{
-  for ( int c=0; c != EOF; c = fgetc(f) ) {
-    switch ( c ) {
-      case '<':
-        break;
-      case '>':
-        break;
-      case '+':
-        break;
-      case '-':
-        break;
-      case '[':
-        break;
-      case ']':
-        break;
-      default:
-        break;
+struct Program {
+  uint8_t *memory;
+
+  Program(const size_t memsize = 100000)
+    : memory(new uint8_t[memsize])
+  {
+  }
+
+  ~Program()
+  {
+    delete[](memory);
+  }
+
+  void compile(FILE *f)
+  {
+    for ( int c=0; c != EOF; c = fgetc(f) ) {
+      switch ( c ) {
+        case '<':
+          break;
+        case '>':
+          break;
+        case '+':
+          break;
+        case '-':
+          break;
+        case '[':
+          break;
+        case ']':
+          break;
+        default:
+          break;
+      }
     }
   }
-}
+
+  void run()
+  {
+  }
+};
 
 int main(int argc, char *argv[])
 {
@@ -35,8 +54,10 @@ int main(int argc, char *argv[])
       continue;
     FILE *f = fopen(argv[n], "rt");
     if ( f ) {
-      compile(f);
+      Program p;
+      p.compile(f);
       fclose(f);
+      p.run();
     }
   }
 
