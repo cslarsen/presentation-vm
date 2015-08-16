@@ -15,7 +15,7 @@ struct Program {
   Program(const size_t memsize = 100000)
     : memory(static_cast<uint8_t*>(malloc(sizeof(uint8_t)*memsize)))
   {
-    memset(&memory[0], 0, sizeof(uint8_t)*memsize);
+    memset(memory, 0, sizeof(uint8_t)*memsize);
   }
 
   ~Program()
@@ -27,45 +27,37 @@ struct Program {
   {
     jit_prolog();
 
-    // R0 -- base pointer to memory
-    jit_movi(JIT_R0, reinterpret_cast<jit_word_t>(&memory[0]));
+    // V0 -- base pointer to memory
+    jit_movi(JIT_V0, reinterpret_cast<jit_word_t>(memory));
 
-    // R1 -- offset pointer to memory
-    jit_movi(JIT_R1, 0);
+    // V1 -- offset pointer to memory
+    jit_movi(JIT_V1, 0);
 
-    for ( int c=0; c != EOF; c = fgetc(f) ) {
+    for ( int c=fgetc(f); c != EOF; c = fgetc(f) ) {
       switch ( c ) {
         case '<':
-          jit_addi(JIT_R1, JIT_R1, -1);
+          jit_addi(JIT_V1, JIT_V1, -1);
           break;
         case '>':
-          jit_addi(JIT_R1, JIT_R1, 1);
+          jit_addi(JIT_V1, JIT_V1, 1);
           break;
         case '+':
-          jit_ldxr(JIT_R2, JIT_R0, JIT_R1);
-          jit_addi(JIT_R2, JIT_R2, 1);
-          jit_stxr(JIT_R0, JIT_R1, JIT_R2);
+          jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
+          jit_addi(JIT_V2, JIT_V2, 1);
+          jit_stxr(JIT_V0, JIT_V1, JIT_V2);
           break;
         case '-':
-          jit_ldxr(JIT_R2, JIT_R0, JIT_R1);
-          jit_addi(JIT_R2, JIT_R2, -1);
-          jit_stxr(JIT_R0, JIT_R1, JIT_R2);
+          jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
+          jit_addi(JIT_V2, JIT_V2, -1);
+          jit_stxr(JIT_V0, JIT_V1, JIT_V2);
           break;
         case '.':
-          jit_ldxr(JIT_R2, JIT_R0, JIT_R1);
-          jit_pushargr(JIT_R2);
+          jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
           jit_prepare();
+          jit_pushargr(JIT_V2);
           jit_finishi(reinterpret_cast<jit_pointer_t>(putchar));
-          jit_retr(JIT_R2);
- //         jit_ret();
-          // call putchar with JIR_R2 as arg
           break;
         case ',':
-          jit_movi(JIT_R2, 0); // should be result of getchar
-          jit_prepare();
-          jit_finishi(reinterpret_cast<jit_pointer_t>(getchar));
-          jit_ret();
-          jit_stxr(JIT_R0, JIT_R1, JIT_R2);
           break;
         case '[':
           break;
@@ -76,7 +68,6 @@ struct Program {
       }
     }
 
-    jit_epilog();
     code = reinterpret_cast<vfptr>(jit_emit());
   }
 
