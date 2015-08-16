@@ -118,8 +118,7 @@ int main(int argc, char *argv[])
     FILE *f = !strcmp(argv[n], "-")? stdin : fopen(argv[n], "rt");
 
     if ( !f ) {
-      int error = errno;
-      fprintf(stderr, "Could not open %s: %s\n", argv[n], strerror(error));
+      perror(argv[n]);
       return 1;
     } else {
       Machine p;
