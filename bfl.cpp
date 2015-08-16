@@ -20,7 +20,6 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
   jit_movi(JIT_V1, 0); // offset
 
   std::stack<label_pair> loops;
-  jit_node_t *while_begin, *while_end;
 
   for ( int c=0; c != EOF; c = fgetc(f) ) {
     switch ( c ) {
@@ -111,7 +110,7 @@ int main(int argc, char *argv[])
   init_jit(argv[0]);
   _jit = jit_new_state();
 
-  for ( size_t n=1; n<argc; ++n ) {
+  for ( int n=1; n<argc; ++n ) {
     if ( argv[n][0] == '-' && argv[n][1] != '\0' )
       continue;
 
