@@ -24,7 +24,7 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
   for ( int c=0; c != EOF; c = fgetc(f) ) {
     switch ( c ) {
       case '<':
-        jit_addi(JIT_V1, JIT_V1, -1);
+        jit_subi(JIT_V1, JIT_V1, 1);
         break;
       case '>':
         jit_addi(JIT_V1, JIT_V1, 1);
@@ -36,7 +36,7 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
         break;
       case '-':
         jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
-        jit_addi(JIT_V2, JIT_V2, -1);
+        jit_subi(JIT_V2, JIT_V2, 1);
         jit_stxr(JIT_V0, JIT_V1, JIT_V2);
         break;
       case '.':
