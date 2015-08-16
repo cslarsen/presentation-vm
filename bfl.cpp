@@ -6,29 +6,39 @@ extern "C" {
 
 static jit_state_t *_jit;
 
-typedef int (*pifi)(int);    /* Pointer to Int Function of Int */
+void compile(FILE *f)
+{
+  for ( int c=0; c != EOF; c = fgetc(f) ) {
+    switch ( c ) {
+      case '<':
+        break;
+      case '>':
+        break;
+      case '+':
+        break;
+      case '-':
+        break;
+      case '[':
+        break;
+      case ']':
+        break;
+      default:
+        break;
+    }
+  }
+}
 
 int main(int argc, char *argv[])
 {
-  jit_node_t  *in;
-  pifi         incr;
+  for ( size_t n=1; n<argc; ++n ) {
+    if ( argv[n][0] == '-' )
+      continue;
+    FILE *f = fopen(argv[n], "rt");
+    if ( f ) {
+      compile(f);
+      fclose(f);
+    }
+  }
 
-  init_jit(argv[0]);
-  _jit = jit_new_state();
-
-  jit_prolog();                    /*      prolog              */
-  in = jit_arg();                  /*      in = arg            */
-  jit_getarg(JIT_R0, in);          /*      getarg R0           */
-  jit_addi(JIT_R0, JIT_R0, 1);     /*      addi   R0, R0, 1    */
-  jit_retr(JIT_R0);                /*      retr   R0           */
-
-  incr = (pifi)jit_emit();
-  jit_clear_state();
-
-  /* call the generated code, passing 5 as an argument */
-  printf("%d + 1 = %d\n", 5, incr(5));
-
-  jit_destroy_state();
-  finish_jit();
   return 0;
 }
