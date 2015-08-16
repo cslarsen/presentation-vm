@@ -35,68 +35,75 @@ struct Loop {
   }
 };
 
-jit_pointer_t compile(FILE *f, uint8_t *memory)
+jit_pointer_t compile(FILE *f, jit_word_t *memory, const bool flush = true)
 {
   jit_prolog();
-  jit_movi(JIT_V0, reinterpret_cast<jit_word_t>(memory)); // base
-  jit_movi(JIT_V1, 0); // offset
+  jit_movi(JIT_V0, reinterpret_cast<jit_word_t>(memory));
 
   std::stack<Loop> loops;
+
+  jit_node_t* start = jit_note(__FILE__, __LINE__);
 
   for ( int c=0; c != EOF; c = fgetc(f) ) {
     switch ( c ) {
       case '<':
-        jit_subi(JIT_V1, JIT_V1, 1);
+        jit_subi(JIT_V0, JIT_V0, 1);
         break;
+
       case '>':
-        jit_addi(JIT_V1, JIT_V1, 1);
+        jit_addi(JIT_V0, JIT_V0, 1);
         break;
+
       case '+':
-        jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
-        jit_addi(JIT_V2, JIT_V2, 1);
-        jit_stxr(JIT_V0, JIT_V1, JIT_V2);
+        jit_ldr(JIT_V1, JIT_V0);
+        jit_addi(JIT_V1, JIT_V1, 1);
+        jit_str(JIT_V0, JIT_V1);
         break;
+
       case '-':
-        jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
-        jit_subi(JIT_V2, JIT_V2, 1);
-        jit_stxr(JIT_V0, JIT_V1, JIT_V2);
+        jit_ldr(JIT_V1, JIT_V0);
+        jit_subi(JIT_V1, JIT_V1, 1);
+        jit_str(JIT_V0, JIT_V1);
         break;
+
       case '.':
-        jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
+        jit_ldr(JIT_V1, JIT_V0);
         jit_prepare();
-        jit_pushargr(JIT_V2);
+        jit_pushargr(JIT_V1);
         jit_finishi(reinterpret_cast<jit_pointer_t>(putchar));
+
+        if ( flush ) {
+          jit_prepare();
+          jit_pushargi(reinterpret_cast<jit_word_t>(stdout));
+          jit_finishi(reinterpret_cast<jit_pointer_t>(fflush));
+        }
         break;
+
       case ',':
         jit_prepare();
         jit_finishi(reinterpret_cast<jit_pointer_t>(getchar));
-        jit_retval(JIT_V2);
-        jit_stxr(JIT_V0, JIT_V1, JIT_V2);
+        jit_retval(JIT_V1);
+        jit_str(JIT_V0, JIT_V1);
         break;
+
       case '[': {
         Loop loop;
-
-        // if ( *value == 0 ) goto loop.end;
+        jit_ldr(JIT_V1, JIT_V0);
         loop.end = jit_forward();
-        jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
-        jit_node_t *j = jit_beqi(JIT_V2, 0);
+        //loop.end = jit_beqi(JIT_V1, 0);
+        jit_node_t *j = jit_beqi(JIT_V1, 0);
         jit_patch_at(j, loop.end);
-
-        // mark loop body
         loop.body = jit_label();
         loops.push(loop);
       } break;
+
       case ']': {
         Loop loop = loops.top();
-        loops.pop();
-
-        // if ( *value != 0 ) goto loop.body;
-        jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
-        jit_node_t *j = jit_bnei(JIT_V2, 0);
+        jit_ldr(JIT_V1, JIT_V0);
+        jit_node_t *j = jit_bnei(JIT_V1, 0);
         jit_patch_at(j, loop.body);
-
-        // mark loop end
         jit_link(loop.end);
+        loops.pop();
         break;
       }
       default:
@@ -104,19 +111,25 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
     }
   }
 
+  jit_node_t* stop = jit_note(__FILE__, __LINE__);
+
+  jit_ret();
   jit_epilog();
-  return jit_emit();
+  jit_pointer_t r = jit_emit();
+  fprintf(stderr, "compiled to %zu bytes\n", (char*)jit_address(stop) -
+      (char*)jit_address(start));
+  return r;
 }
 
 struct Machine {
-  uint8_t *memory;
+  jit_word_t *memory;
   vfptr program;
 
   Machine(const size_t memsize = 100000)
-    : memory(static_cast<uint8_t*>(malloc(sizeof(uint8_t)*memsize))),
+    : memory(static_cast<jit_word_t*>(malloc(sizeof(jit_word_t)*memsize))),
       program(NULL)
   {
-    memset(memory, 0, sizeof(uint8_t)*memsize);
+    memset(memory, 0, sizeof(jit_word_t)*memsize);
   }
 
   void compile(FILE* f)
@@ -153,7 +166,6 @@ int main(int argc, char *argv[])
       Machine p;
       p.compile(f);
       fclose(f);
-      jit_clear_state();
       p.run();
     }
   }
