@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stack>
 
 extern "C" {
 #include <lightning.h>
@@ -13,6 +14,8 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
   jit_prolog();
   jit_movi(JIT_V0, reinterpret_cast<jit_word_t>(memory)); // base
   jit_movi(JIT_V1, 0); // offset
+
+  std::stack<jit_node_t*> labels;
 
   for ( int c=0; c != EOF; c = fgetc(f) ) {
     switch ( c ) {
@@ -45,9 +48,13 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
         jit_stxr(JIT_V0, JIT_V1, JIT_V2);
         break;
       case '[':
+        labels.push(jit_indirect());
         break;
-      case ']':
+      case ']': {
+        jit_node_t *label = labels.top();
+        labels.pop();
         break;
+      }
       default:
         break;
     }
