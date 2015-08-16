@@ -8,6 +8,7 @@ extern "C" {
 
 static jit_state_t *_jit;
 typedef void (*vfptr)(void);
+typedef std::pair<jit_node_t*, jit_node_t*> label_pair;
 
 jit_pointer_t compile(FILE *f, uint8_t *memory)
 {
@@ -15,7 +16,7 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
   jit_movi(JIT_V0, reinterpret_cast<jit_word_t>(memory)); // base
   jit_movi(JIT_V1, 0); // offset
 
-  std::stack<jit_node_t*> labels;
+  std::stack<label_pair> loops;
 
   for ( int c=0; c != EOF; c = fgetc(f) ) {
     switch ( c ) {
@@ -48,15 +49,16 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
         jit_stxr(JIT_V0, JIT_V1, JIT_V2);
         break;
       case '[': {
-        jit_node_t* label = jit_label();
-        labels.push(label);
+        jit_node_t* start_loop = jit_label();
+        jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
+        jit_node_t* exit_loop_patch = jit_beqi(JIT_V2, 0);
+        loops.push(label_pair(start_loop, exit_loop_patch));
       } break;
       case ']': {
-        jit_node_t* label = labels.top();
-        labels.pop();
-        jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
-        jit_node_t* jump = jit_bnei(JIT_V2, 0);
-        jit_patch_at(jump, label);
+        label_pair pair = loops.top();
+        jit_patch_at(jit_jmpi(), pair.first);
+        jit_patch_at(pair.second, jit_label());
+        loops.pop();
         break;
       }
       default:
