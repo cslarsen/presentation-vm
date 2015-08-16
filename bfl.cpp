@@ -13,19 +13,18 @@ struct Program {
   vfptr code;
 
   Program(const size_t memsize = 100000)
-    : memory(new uint8_t[memsize])
+    : memory(static_cast<uint8_t*>(malloc(sizeof(uint8_t)*memsize)))
   {
     memset(&memory[0], 0, sizeof(uint8_t)*memsize);
   }
 
   ~Program()
   {
-    delete[](memory);
+    free(memory);
   }
 
   void compile(FILE *f)
   {
-    printf("compiling\n");
     jit_prolog();
 
     // R0 -- base pointer to memory
@@ -44,22 +43,28 @@ struct Program {
           break;
         case '+':
           jit_ldxr(JIT_R2, JIT_R0, JIT_R1);
-          jit_addi(JIT_R1, JIT_R1, 1);
+          jit_addi(JIT_R2, JIT_R2, 1);
           jit_stxr(JIT_R0, JIT_R1, JIT_R2);
           break;
         case '-':
           jit_ldxr(JIT_R2, JIT_R0, JIT_R1);
-          jit_addi(JIT_R1, JIT_R1, -1);
+          jit_addi(JIT_R2, JIT_R2, -1);
           jit_stxr(JIT_R0, JIT_R1, JIT_R2);
           break;
         case '.':
           jit_ldxr(JIT_R2, JIT_R0, JIT_R1);
           jit_pushargr(JIT_R2);
-//          jit_finishi(putchar);
+          jit_prepare();
+          jit_finishi(reinterpret_cast<jit_pointer_t>(putchar));
+          jit_retr(JIT_R2);
+ //         jit_ret();
           // call putchar with JIR_R2 as arg
           break;
         case ',':
           jit_movi(JIT_R2, 0); // should be result of getchar
+          jit_prepare();
+          jit_finishi(reinterpret_cast<jit_pointer_t>(getchar));
+          jit_ret();
           jit_stxr(JIT_R0, JIT_R1, JIT_R2);
           break;
         case '[':
@@ -71,12 +76,12 @@ struct Program {
       }
     }
 
+    jit_epilog();
     code = reinterpret_cast<vfptr>(jit_emit());
   }
 
   void run()
   {
-    printf("running\n");
     code();
   }
 };
