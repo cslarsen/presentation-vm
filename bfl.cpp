@@ -58,6 +58,10 @@ struct Program {
           jit_finishi(reinterpret_cast<jit_pointer_t>(putchar));
           break;
         case ',':
+          jit_prepare();
+          jit_finishi(reinterpret_cast<jit_pointer_t>(getchar));
+          jit_retval(JIT_V2);
+          jit_stxr(JIT_V0, JIT_V1, JIT_V2);
           break;
         case '[':
           break;
