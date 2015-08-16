@@ -49,16 +49,24 @@ jit_pointer_t compile(FILE *f, uint8_t *memory)
         jit_stxr(JIT_V0, JIT_V1, JIT_V2);
         break;
       case '[': {
-        jit_node_t* start_loop = jit_label();
+        label_pair pair;
+        pair.first = jit_label();
+        pair.second = jit_forward();
         jit_ldxr(JIT_V2, JIT_V0, JIT_V1);
-        jit_node_t* exit_loop_patch = jit_beqi(JIT_V2, 0);
-        loops.push(label_pair(start_loop, exit_loop_patch));
+        jit_node_t* jump = jit_beqi(JIT_V2, 0);
+        jit_patch_at(jump, pair.second);
+
+        loops.push(pair);
       } break;
       case ']': {
         label_pair pair = loops.top();
-        jit_patch_at(jit_jmpi(), pair.first);
-        jit_patch_at(pair.second, jit_label());
         loops.pop();
+
+        jit_node_t* p = jit_movi(JIT_V2, 0);
+        jit_jmpr(JIT_V2);
+        jit_patch_at(p, pair.first);
+        jit_link(pair.second);
+
         break;
       }
       default:
