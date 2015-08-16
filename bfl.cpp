@@ -68,6 +68,7 @@ struct Program {
       }
     }
 
+    jit_epilog();
     code = reinterpret_cast<vfptr>(jit_emit());
   }
 
