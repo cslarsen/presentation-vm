@@ -47,11 +47,11 @@ jit_pointer_t compile(FILE *f, jit_word_t *memory, const bool flush = true)
   for ( int c=0; c != EOF; c = fgetc(f) ) {
     switch ( c ) {
       case '<':
-        jit_subi(JIT_V0, JIT_V0, 1);
+        jit_subi(JIT_V0, JIT_V0, sizeof(jit_word_t));
         break;
 
       case '>':
-        jit_addi(JIT_V0, JIT_V0, 1);
+        jit_addi(JIT_V0, JIT_V0, sizeof(jit_word_t));
         break;
 
       case '+':
