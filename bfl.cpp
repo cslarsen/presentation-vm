@@ -15,24 +15,6 @@ static jit_state_t *_jit;
 struct Loop {
   jit_node_t *body;
   jit_node_t *end;
-
-  Loop(jit_node_t* body_ = NULL, jit_node_t* end_ = NULL):
-    body(body_), end(end_)
-  {
-  }
-
-  Loop(const Loop& l):
-    body(l.body), end(l.end)
-  {
-  }
-
-  Loop& operator=(const Loop& l) {
-    if ( this != &l ) {
-      body = l.body;
-      end = l.end;
-    }
-    return *this;
-  }
 };
 
 jit_pointer_t compile(FILE *f, jit_word_t *memory, const bool flush = true)
