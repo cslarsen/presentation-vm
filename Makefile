@@ -1,7 +1,7 @@
-CFLAGS = -W -Wall -g
-CXXFLAGS = -W -Wall -g
-TARGETS := bfl
-LDFLAGS = -L/usr/local/lib -llightning
+CFLAGS = -W -Wall
+CXXFLAGS = -W -Wall
+TARGETS := bfl bflo
+LDFLAGS = -llightning
 
 all: $(TARGETS)
 
