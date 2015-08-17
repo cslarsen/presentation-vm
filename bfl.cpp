@@ -90,7 +90,6 @@ jit_pointer_t compile(FILE *f, jit_word_t *memory, const bool flush = true)
         Loop loop;
         jit_ldr(JIT_V1, JIT_V0);
         loop.end = jit_forward();
-        //loop.end = jit_beqi(JIT_V1, 0);
         jit_node_t *j = jit_beqi(JIT_V1, 0);
         jit_patch_at(j, loop.end);
         loop.body = jit_label();
