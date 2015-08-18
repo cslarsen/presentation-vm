@@ -105,8 +105,7 @@ jit_pointer_t compile(const std::vector<Oper>& ops, jit_word_t *memory, const bo
 
       case '.':
         jit_prepare();
-        jit_movr(JIT_R0, JIT_V1);
-        jit_pushargr(JIT_R0);
+        jit_pushargr(JIT_V1);
         jit_finishi(reinterpret_cast<jit_pointer_t>(putchar));
 
         if ( flush ) {
