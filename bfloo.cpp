@@ -52,6 +52,18 @@ std::vector<Oper> optimize(FILE* f)
     ops.push_back(op);
   }
 
+  // Special [-] ==> set current cell to zero
+  for ( size_t n=0; n+2<ops.size(); ++n ) {
+    Oper a = ops[n];
+    Oper b = ops[n+1];
+    Oper c = ops[n+2];
+    if ( a.code=='[' && b.code=='-' && b.count==1 && c.code==']' ) {
+      ops.erase(ops.begin()+n, ops.begin()+n+3);
+      ops.insert(ops.begin()+n, Oper('z', 0));
+      continue;
+    }
+  }
+
   return ops;
 }
 
@@ -76,6 +88,12 @@ jit_pointer_t compile(const std::vector<Oper>& ops, jit_word_t *memory, const bo
       case '>':
         jit_addi(JIT_V0, JIT_V0, ops[n].count * sizeof(jit_word_t));
         load = true;
+        break;
+
+      case 'z':
+        jit_movi(JIT_V1, 0);
+        jit_str(JIT_V0, JIT_V1);
+        load = false;
         break;
 
       case '+':
