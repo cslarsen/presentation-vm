@@ -71,56 +71,42 @@ jit_pointer_t compile(const std::vector<Oper>& ops, jit_word_t *memory, const bo
 {
   jit_prolog();
   jit_movi(JIT_V0, reinterpret_cast<jit_word_t>(memory));
+  jit_movi(JIT_V1, 0);
 
   std::stack<Loop> loops;
 
   jit_node_t* start = jit_note(__FILE__, __LINE__);
 
-  bool load = true;
-
   for ( size_t n=0; n<ops.size(); ++n ) {
     switch ( ops[n].code ) {
       case '<':
+        jit_str(JIT_V0, JIT_V1);
         jit_subi(JIT_V0, JIT_V0, ops[n].count * sizeof(jit_word_t));
-        load = true;
+        jit_ldr(JIT_V1, JIT_V0);
         break;
 
       case '>':
+        jit_str(JIT_V0, JIT_V1);
         jit_addi(JIT_V0, JIT_V0, ops[n].count * sizeof(jit_word_t));
-        load = true;
+        jit_ldr(JIT_V1, JIT_V0);
         break;
 
       case 'z':
         jit_movi(JIT_V1, 0);
-        jit_str(JIT_V0, JIT_V1);
-        load = false;
         break;
 
       case '+':
-        if ( load ) {
-          jit_ldr(JIT_V1, JIT_V0);
-          load = false;
-        }
         jit_addi(JIT_V1, JIT_V1, ops[n].count);
-        jit_str(JIT_V0, JIT_V1);
         break;
 
       case '-':
-        if ( load ) {
-          jit_ldr(JIT_V1, JIT_V0);
-          load = false;
-        }
         jit_subi(JIT_V1, JIT_V1, ops[n].count);
-        jit_str(JIT_V0, JIT_V1);
         break;
 
       case '.':
-        if ( load ) {
-          jit_ldr(JIT_V1, JIT_V0);
-          load = false;
-        }
         jit_prepare();
-        jit_pushargr(JIT_V1);
+        jit_movr(JIT_R0, JIT_V1);
+        jit_pushargr(JIT_R0);
         jit_finishi(reinterpret_cast<jit_pointer_t>(putchar));
 
         if ( flush ) {
@@ -134,15 +120,10 @@ jit_pointer_t compile(const std::vector<Oper>& ops, jit_word_t *memory, const bo
         jit_prepare();
         jit_finishi(reinterpret_cast<jit_pointer_t>(getchar));
         jit_retval(JIT_V1);
-        jit_str(JIT_V0, JIT_V1);
         break;
 
       case '[': {
         Loop loop;
-        if ( load ) {
-          jit_ldr(JIT_V1, JIT_V0);
-          load = false;
-        }
         loop.end = jit_forward();
         jit_node_t *j = jit_beqi(JIT_V1, 0);
         jit_patch_at(j, loop.end);
@@ -152,10 +133,6 @@ jit_pointer_t compile(const std::vector<Oper>& ops, jit_word_t *memory, const bo
 
       case ']': {
         Loop loop = loops.top();
-        if ( load ) {
-          jit_ldr(JIT_V1, JIT_V0);
-          load = false;
-        }
         jit_node_t *j = jit_bnei(JIT_V1, 0);
         jit_patch_at(j, loop.body);
         jit_link(loop.end);
